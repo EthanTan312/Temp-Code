@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Data Display</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --success: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --border: #e9ecef;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .card-header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            color: var(--primary);
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-subtitle {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-weight: 600;
+            color: var(--dark);
+            flex: 1;
+        }
+
+        .data-value {
+            flex: 2;
+            text-align: right;
+            color: #495057;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            body {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Data Dashboard</h1>
+            <p>Beautiful presentation of your JSON data</p>
+        </div>
+
+        <div class="cards-grid" id="cardsContainer">
+            <!-- Cards will be inserted here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Example JSON data
+        const jsonData = {
+            "users": [
+                {
+                    "id": 1,
+                    "name": "John Smith",
+                    "email": "john.smith@example.com",
+                    "role": "Administrator",
+                    "status": "active",
+                    "joinDate": "2023-01-15",
+                    "lastLogin": "2024-01-20",
+                    "projects": 12,
+                    "performance": 95
+                },
+                {
+                    "id": 2,
+                    "name": "Sarah Johnson",
+                    "email": "sarah.j@example.com",
+                    "role": "Developer",
+                    "status": "active",
+                    "joinDate": "2023-03-10",
+                    "lastLogin": "2024-01-19",
+                    "projects": 8,
+                    "performance": 87
+                },
+                {
+                    "id": 3,
+                    "name": "Mike Chen",
+                    "email": "mike.chen@example.com",
+                    "role": "Designer",
+                    "status": "inactive",
+                    "joinDate": "2023-06-22",
+                    "lastLogin": "2024-01-10",
+                    "projects": 15,
+                    "performance": 92
+                },
+                {
+                    "id": 4,
+                    "name": "Emily Davis",
+                    "email": "emily.davis@example.com",
+                    "role": "Manager",
+                    "status": "active",
+                    "joinDate": "2023-02-28",
+                    "lastLogin": "2024-01-21",
+                    "projects": 6,
+                    "performance": 78
+                }
+            ]
+        };
+
+        function getStatusBadge(status) {
+            const badges = {
+                active: 'badge-success',
+                inactive: 'badge-warning',
+                pending: 'badge-danger'
+            };
+            return `<span class="badge ${badges[status] || 'badge-warning'}">${status}</span>`;
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            
+            jsonData.users.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-title">${user.name}</div>
+                        <div class="card-subtitle">${user.role}</div>
+                    </div>
+                    
+                    <div class="data-item">
+                        <span class="data-label">Email</span>
+                        <span class="data-value">${user.email}</span>
+                    </div>
+                    
+                    <div class="data-item">
+                        <span class="data-label">Status</span>
+                        <span class="data-value">${getStatusBadge(user.status)}</span>
+                    </div>
+                    
+                    <div class="data-item">
+                        <span class="data-label">Join Date</span>
+                        <span class="data-value">${formatDate(user.joinDate)}</span>
+                    </div>
+                    
+                    <div class="data-item">
+                        <span class="data-label">Last Login</span>
+                        <span class="data-value">${formatDate(user.lastLogin)}</span>
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${user.projects}</div>
+                            <div class="stat-label">Projects</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${user.performance}%</div>
+                            <div class="stat-label">Performance</div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Initialize the display
+        renderCards();
+    </script>
+</body>
+</html>
