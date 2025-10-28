@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hypervisor & VM Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .file-upload-section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: 15px 0;
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-input-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .file-input-button:hover {
+            background-color: #2980b9;
+        }
+        
+        .file-name {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .hypervisor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(550px, 1fr));
+            gap: 25px;
+        }
+        
+        .hypervisor-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .hypervisor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .hypervisor-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .hypervisor-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .ht-indicator {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .hypervisor-details {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .vm-section {
+            padding: 0 20px 20px;
+        }
+        
+        .vm-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        
+        .vm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .vm-table th {
+            background-color: var(--light-bg);
+            color: var(--primary-color);
+            text-align: left;
+            padding: 12px 15px;
+            font-weight: 600;
+        }
+        
+        .vm-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .vm-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .vm-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .status-running {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        
+        .status-shut-off {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+        
+        .resource-bar {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .resource-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .hypervisor-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hypervisor-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-stats {
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Hypervisor & VM Dashboard</h1>
+            <p class="subtitle">Upload your JSON data file to view server information</p>
+        </header>
+        
+        <div class="file-upload-section">
+            <h2>Upload Data File</h2>
+            <p>Select a JSON file with your hypervisor and VM data</p>
+            <div class="file-input-wrapper">
+                <div class="file-input-button">Choose File</div>
+                <input type="file" id="file-input" accept=".json">
+            </div>
+            <div class="file-name" id="file-name">No file selected</div>
+        </div>
+        
+        <div class="summary-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-hypervisors">0</div>
+                <div class="stat-label">Hypervisors</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-vms">0</div>
+                <div class="stat-label">Virtual Machines</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="running-vms">0</div>
+                <div class="stat-label">Running VMs</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-cpu">0</div>
+                <div class="stat-label">Total CPU Cores</div>
+            </div>
+        </div>
+        
+        <div class="hypervisor-grid" id="hypervisor-container">
+            <div class="no-data">Please upload a JSON file to view data</div>
+        </div>
+    </div>
+
+    <script>
+        // File input handling
+        const fileInput = document.getElementById('file-input');
+        const fileName = document.getElementById('file-name');
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        renderDashboard(data);
+                    } catch (error) {
+                        alert('Error parsing JSON file. Please make sure it\'s a valid JSON file.');
+                        console.error('JSON parsing error:', error);
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                fileName.textContent = 'No file selected';
+            }
+        });
+
+        // Calculate summary statistics
+        function calculateStats(data) {
+            const hypervisors = data.hypervisor;
+            const totalHypervisors = hypervisors.length;
+            let totalVMs = 0;
+            let runningVMs = 0;
+            let totalCPU = 0;
+            
+            hypervisors.forEach(hv => {
+                totalVMs += hv.VM.length;
+                totalCPU += hv.cpu;
+                
+                hv.VM.forEach(vm => {
+                    if (vm.status === 'running') {
+                        runningVMs++;
+                    }
+                });
+            });
+            
+            document.getElementById('total-hypervisors').textContent = totalHypervisors;
+            document.getElementById('total-vms').textContent = totalVMs;
+            document.getElementById('running-vms').textContent = runningVMs;
+            document.getElementById('total-cpu').textContent = totalCPU;
+        }
+
+        // Create hypervisor cards
+        function createHypervisorCards(data) {
+            const container = document.getElementById('hypervisor-container');
+            container.innerHTML = '';
+            
+            data.hypervisor.forEach(hypervisor => {
+                const card = document.createElement('div');
+                card.className = 'hypervisor-card';
+                
+                // Calculate VM resource usage
+                let totalVMCpu = 0;
+                let totalVMMemory = 0;
+                
+                hypervisor.VM.forEach(vm => {
+                    totalVMCpu += vm.cpu;
+                    totalVMMemory += vm.memory;
+                });
+                
+                const cpuUsagePercent = Math.round((totalVMCpu / hypervisor.cpu) * 100);
+                const memoryUsagePercent = Math.round((totalVMMemory / hypervisor.memory) * 100);
+                
+                card.innerHTML = `
+                    <div class="hypervisor-header">
+                        <div class="hypervisor-name">${hypervisor.hostname}</div>
+                        <div class="ht-indicator">${hypervisor.ht ? 'HT Enabled' : 'HT Disabled'}</div>
+                    </div>
+                    <div class="hypervisor-details">
+                        <div class="detail-item">
+                            <span class="detail-label">CPU Cores</span>
+                            <span class="detail-value">${hypervisor.cpu} (${totalVMCpu} used)</span>
+                            <div class="resource-bar">
+                                <div class="resource-fill" style="width: ${cpuUsagePercent}%"></div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Memory (GB)</span>
+                            <span class="detail-value">${hypervisor.memory} (${totalVMMemory} used)</span>
+                            <div class="resource-bar">
+                                <div class="resource-fill" style="width: ${memoryUsagePercent}%"></div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Hugepage (GB)</span>
+                            <span class="detail-value">${hypervisor.hugepage}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Disk (GB)</span>
+                            <span class="detail-value">${hypervisor.disk}</span>
+                        </div>
+                    </div>
+                    <div class="vm-section">
+                        <h3 class="vm-title">Virtual Machines (${hypervisor.VM.length})</h3>
+                        <table class="vm-table">
+                            <thead>
+                                <tr>
+                                    <th>Hostname</th>
+                                    <th>Status</th>
+                                    <th>CPU</th>
+                                    <th>Memory</th>
+                                    <th>Disks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${hypervisor.VM.map(vm => `
+                                    <tr>
+                                        <td>${vm.hostname}</td>
+                                        <td><span class="status-${vm.status.replace(' ', '-')}">${vm.status}</span></td>
+                                        <td>${vm.cpu} cores</td>
+                                        <td>${vm.memory} GB</td>
+                                        <td>${vm.disk1}GB${vm.disk2 ? ` + ${vm.disk2}GB` : ''}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Render the complete dashboard
+        function renderDashboard(data) {
+            if (!data.hypervisor) {
+                alert('Invalid data format. The JSON file must contain a "hypervisor" array.');
+                return;
+            }
+            
+            calculateStats(data);
+            createHypervisorCards(data);
+        }
+    </script>
+</body>
+</html>
