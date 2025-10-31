@@ -1,0 +1,97 @@
+{
+        "hypervisor": [
+                {
+                    "hostname": "p-server-01",
+                    "ht": true,
+                    "cpu": 64,
+                    "memory": 384,
+                    "hugepage": 284,
+                    "disk": 2200,
+                    "VM": [
+                        {
+                                "hostname": "v-server-01",
+                                "status": "running",
+                                "cpu": 2,
+                                "memory": 32,
+                                "disk": 130
+                        },
+                        {
+                                "hostname": "v-server-02",
+                                "status": "running",
+                                "cpu": 2,
+                                "memory": 128,
+                                "disk": 25
+                        },
+                        {
+                                "hostname": "v-server-03",
+                                "status": "running",
+                                "cpu": 4,
+                                "memory": 8,
+                                "disk": 100
+                        }
+                    ]
+                },
+                {
+                     "hostname": "p-server-02",
+                     "ht": false,
+                     "cpu": 128,
+                     "memory": 384,
+                     "hugepage": 284,
+                     "disk": 2200,
+                     "VM": [
+                        {
+                                "hostname": "v-server-04",
+                                "status": "running",
+                                "cpu": 2,
+                                "memory": 4,
+                                "disk": 130
+                        },
+                        {
+                                "hostname": "v-server-05",
+                                "status": "running",
+                                "cpu": 2,
+                                "memory": 4,
+                                "disk": 25
+                        },
+                        {
+                                "hostname": "v-server-06",
+                                "status": "shut off",
+                                "cpu": 4,
+                                "memory": 8,
+                                "disk": 150
+                        }
+                     ]
+                 },
+                 {
+                     "hostname": "p-server-03",
+                     "ht": true,
+                     "cpu": 128,
+                     "memory": 384,
+                     "hugepage": 284,
+                     "disk": 2200,
+                     "VM": [
+                        {
+                                "hostname": "v-server-07",
+                                "status": "running",
+                                "cpu": 2,
+                                "memory": 4,
+                                "disk": 100
+                        },
+                        {
+                                "hostname": "v-server-08",
+                                "status": "running",
+                                "cpu": 2,
+                                "memory": 4,
+                                "disk": 30
+                        },
+                        {
+                                "hostname": "v-server-09",
+                                "status": "shut off",
+                                "cpu": 4,
+                                "memory": 8,
+                                "disk": 72
+                        }
+                     ]
+                 }
+        ]
+}
