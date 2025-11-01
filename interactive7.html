@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Migration Dashboard with Time Estimation</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --migration-color: #9b59b6;
+            --affinity-color: #e67e22;
+            --disk-color: #8e44ad;
+            --time-color: #16a085;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .instructions {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .instructions h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .instructions p {
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .instructions code {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            transition: background-color 0.3s;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button.active {
+            background-color: var(--migration-color);
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .stat-hypervisors {
+            color: var(--secondary-color);
+        }
+        
+        .stat-vms {
+            color: var(--primary-color);
+        }
+        
+        .stat-running {
+            color: var(--success-color);
+        }
+        
+        .stat-conflicts {
+            color: var(--danger-color);
+        }
+        
+        .stat-time {
+            color: var(--time-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .dashboard {
+            position: relative;
+            min-height: 600px;
+        }
+        
+        .hypervisor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+            gap: 25px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hypervisor-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .hypervisor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .hypervisor-card.selected {
+            box-shadow: 0 0 0 3px var(--migration-color), 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .hypervisor-card.target {
+            box-shadow: 0 0 0 3px var(--success-color), 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .hypervisor-card.drop-zone {
+            box-shadow: 0 0 0 3px var(--warning-color), 0 10px 20px rgba(0, 0, 0, 0.15);
+            background: #fff9e6;
+        }
+        
+        .hypervisor-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .hypervisor-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .ht-indicator {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .affinity-warning {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        
+        .hypervisor-details {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .predicted-value {
+            color: var(--migration-color);
+            font-weight: 600;
+        }
+        
+        .vm-section {
+            padding: 0 20px 20px;
+        }
+        
+        .vm-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .vm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .vm-table th {
+            background-color: var(--light-bg);
+            color: var(--primary-color);
+            text-align: left;
+            padding: 12px 15px;
+            font-weight: 600;
+        }
+        
+        .vm-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .vm-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .vm-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .vm-table tr.affinity-conflict {
+            background-color: #ffeaea;
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .vm-table tr.affinity-conflict:hover {
+            background-color: #ffd6d6;
+        }
+        
+        .status-running {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        
+        .status-shut-off {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+        
+        .vm-drag-handle {
+            width: 20px;
+            height: 20px;
+            cursor: grab;
+            background: #e9ecef;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .vm-drag-handle:active {
+            cursor: grabbing;
+        }
+        
+        .vm-dragging {
+            opacity: 0.7;
+            background: #f8f9fa;
+            border: 2px dashed var(--migration-color);
+        }
+        
+        .affinity-group {
+            display: inline-block;
+            background: var(--affinity-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
+        
+        .resource-bar {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .resource-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        .cpu-fill {
+            background-color: var(--secondary-color);
+        }
+        
+        .memory-fill {
+            background-color: var(--success-color);
+        }
+        
+        .disk-fill {
+            background-color: var(--disk-color);
+        }
+        
+        .predicted-fill {
+            height: 100%;
+            border-radius: 4px;
+            opacity: 0.7;
+        }
+        
+        .migration-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .migration-path {
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .migration-path.visible {
+            opacity: 0.7;
+        }
+        
+        .migration-path.animated {
+            animation: dash 3s linear infinite;
+        }
+        
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -20;
+            }
+        }
+        
+        .drag-preview {
+            position: fixed;
+            background: white;
+            border: 2px solid var(--migration-color);
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0.9;
+            transform: translate(-50%, -50%);
+        }
+        
+        .migration-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            max-width: 400px;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+        
+        .migration-info.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .migration-info h3 {
+            color: var(--migration-color);
+            margin-bottom: 10px;
+        }
+        
+        .migration-vm-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .migration-vm-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .affinity-management, .migration-settings {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .affinity-form, .settings-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+        
+        .affinity-form input, .affinity-form select, 
+        .settings-form input, .settings-form select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            flex: 1;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        
+        .form-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .affinity-form button, .settings-form button {
+            padding: 10px 20px;
+            white-space: nowrap;
+        }
+        
+        .affinity-groups {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .affinity-group-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid var(--affinity-color);
+        }
+        
+        .affinity-group-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .affinity-group-name {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .affinity-group-vms {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .affinity-vm-tag {
+            background: var(--affinity-color);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .delete-affinity {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .migration-time-info {
+            background: #e8f6f3;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid var(--time-color);
+        }
+        
+        .time-breakdown {
+            margin-top: 15px;
+        }
+        
+        .time-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #d1f2eb;
+        }
+        
+        .time-item:last-child {
+            border-bottom: none;
+        }
+        
+        .time-total {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--time-color);
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #d1f2eb;
+        }
+        
+        .loading, .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+        
+        .error-message {
+            background-color: #ffeaea;
+            color: var(--danger-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+        }
+        
+        @media (max-width: 768px) {
+            .hypervisor-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hypervisor-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-stats {
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .affinity-form, .settings-form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Enhanced Migration Dashboard with Time Estimation</h1>
+            <p>Plan VM migrations with time estimation and affinity conflict detection</p>
+        </header>
+        
+        <div class="instructions">
+            <h2>How to Use This Dashboard</h2>
+            <p>This interactive dashboard allows you to plan VM migrations with advanced features:</p>
+            <ul>
+                <li><strong>Drag & Drop Migration:</strong> Drag VMs from source hypervisors to target hypervisors</li>
+                <li><strong>Time Estimation:</strong> Set transmission rate to calculate total migration time</li>
+                <li><strong>Affinity Conflict Detection:</strong> VMs with potential conflicts are highlighted in red</li>
+                <li><strong>Resource Prediction:</strong> See predicted resource usage after migrations</li>
+                <li><strong>Anti-Affinity Groups:</strong> Define VM groups that shouldn't run on the same hypervisor</li>
+            </ul>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="migration">Migration Planning</div>
+            <div class="tab" data-tab="affinity">Anti-Affinity Groups</div>
+            <div class="tab" data-tab="settings">Migration Settings</div>
+        </div>
+        
+        <div class="tab-content active" id="migration-tab">
+            <div class="controls">
+                <div class="control-group">
+                    <button id="clear-selection">Clear All Migrations</button>
+                </div>
+                <div class="control-group">
+                    <span id="selection-status">Drag VMs to plan migrations</span>
+                </div>
+            </div>
+            
+            <div id="error-container"></div>
+            
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <div class="stat-value stat-hypervisors" id="total-hypervisors">0</div>
+                    <div class="stat-label">Hypervisors</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value stat-vms" id="total-vms">0</div>
+                    <div class="stat-label">Virtual Machines</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value stat-running" id="running-vms">0</div>
+                    <div class="stat-label">Running VMs</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value stat-conflicts" id="affinity-conflicts">0</div>
+                    <div class="stat-label">Affinity Conflicts</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value stat-time" id="migration-time">0h 0m</div>
+                    <div class="stat-label">Est. Migration Time</div>
+                </div>
+            </div>
+            
+            <div class="dashboard">
+                <svg class="migration-overlay" id="migration-overlay"></svg>
+                <div class="hypervisor-grid" id="hypervisor-container">
+                    <div class="loading">Loading data from data.json...</div>
+                </div>
+            </div>
+            
+            <div class="migration-info" id="migration-info">
+                <h3>Migration Plan</h3>
+                <div class="migration-vm-list" id="migration-vm-list"></div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="affinity-tab">
+            <div class="affinity-management">
+                <h2>Anti-Affinity Group Management</h2>
+                <p>Define groups of VMs that should not run on the same hypervisor for high availability.</p>
+                
+                <div class="affinity-form">
+                    <div class="form-group">
+                        <label class="form-label" for="affinity-group-name">Group Name</label>
+                        <input type="text" id="affinity-group-name" placeholder="Enter group name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="affinity-vm-select">Select VMs</label>
+                        <select id="affinity-vm-select" multiple>
+                            <!-- VMs will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <button id="create-affinity-group">Create Group</button>
+                </div>
+                
+                <h3>Existing Anti-Affinity Groups</h3>
+                <div class="affinity-groups" id="affinity-groups-container">
+                    <!-- Anti-affinity groups will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="settings-tab">
+            <div class="migration-settings">
+                <h2>Migration Settings</h2>
+                <p>Configure transmission rate to estimate migration time for planned VM moves.</p>
+                
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label class="form-label" for="transmission-rate">Transmission Rate (MB/s)</label>
+                        <input type="number" id="transmission-rate" min="1" max="10000" value="100" placeholder="Enter MB/s">
+                    </div>
+                    <button id="update-settings">Update Settings</button>
+                </div>
+                
+                <div class="migration-time-info">
+                    <h3>Migration Time Estimation</h3>
+                    <p>Based on current transmission rate and planned VM migrations.</p>
+                    
+                    <div class="time-breakdown" id="time-breakdown">
+                        <!-- Time breakdown will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="time-total" id="total-time">
+                        Total Estimated Time: 0 hours 0 minutes
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let hypervisorData = null;
+        let vmMigrations = {}; // { vmId: { sourceId, targetId } }
+        let antiAffinityGroups = JSON.parse(localStorage.getItem('antiAffinityGroups')) || [];
+        let affinityConflicts = {};
+        let transmissionRate = parseInt(localStorage.getItem('transmissionRate')) || 100; // MB/s
+        let dragState = {
+            isDragging: false,
+            draggedVM: null,
+            sourceHypervisor: null
+        };
+
+        // Color palette for migration paths
+        const migrationColors = [
+            '#9b59b6', '#e74c3c', '#3498db', '#f39c12', 
+            '#1abc9c', '#d35400', '#c0392b', '#8e44ad',
+            '#2980b9', '#27ae60', '#16a085', '#f1c40f'
+        ];
+
+        // Function to load data from data.json
+        async function loadData() {
+            try {
+                const response = await fetch('data.json');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                
+                // Show error message
+                const errorContainer = document.getElementById('error-container');
+                errorContainer.innerHTML = `
+                    <div class="error-message">
+                        <h3>Error Loading Data</h3>
+                        <p>Could not load data from data.json. ${error.message}</p>
+                        <p>Make sure you're running a local server as described above.</p>
+                    </div>
+                `;
+                
+                // Return null to indicate failure
+                return null;
+            }
+        }
+
+        // Calculate summary statistics
+        function calculateStats(data) {
+            const hypervisors = data.hypervisor;
+            const totalHypervisors = hypervisors.length;
+            let totalVMs = 0;
+            let runningVMs = 0;
+            
+            hypervisors.forEach(hv => {
+                totalVMs += hv.VM.length;
+                
+                hv.VM.forEach(vm => {
+                    if (vm.status === 'running') {
+                        runningVMs++;
+                    }
+                });
+            });
+            
+            // Calculate affinity conflicts
+            calculateAffinityConflicts();
+            const totalAffinityConflicts = Object.values(affinityConflicts).reduce((sum, conflicts) => sum + conflicts.length, 0);
+            
+            // Calculate migration time
+            const migrationTime = calculateMigrationTime();
+            
+            document.getElementById('total-hypervisors').textContent = totalHypervisors;
+            document.getElementById('total-vms').textContent = totalVMs;
+            document.getElementById('running-vms').textContent = runningVMs;
+            document.getElementById('affinity-conflicts').textContent = totalAffinityConflicts;
+            document.getElementById('migration-time').textContent = migrationTime;
+        }
+
+        // Calculate migration time based on disk sizes and transmission rate
+        function calculateMigrationTime() {
+            let totalDiskSize = 0; // in MB
+            
+            Object.keys(vmMigrations).forEach(vmId => {
+                const vm = getVMById(vmId);
+                if (vm && vm.disk) {
+                    // Convert GB to MB (1 GB = 1024 MB)
+                    totalDiskSize += vm.disk * 1024;
+                }
+            });
+            
+            if (totalDiskSize === 0 || transmissionRate === 0) {
+                return "0h 0m";
+            }
+            
+            const totalSeconds = totalDiskSize / transmissionRate;
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Update time breakdown in settings tab
+        function updateTimeBreakdown() {
+            const breakdownElement = document.getElementById('time-breakdown');
+            const totalTimeElement = document.getElementById('total-time');
+            
+            if (Object.keys(vmMigrations).length === 0) {
+                breakdownElement.innerHTML = '<p>No migrations planned. Drag VMs to estimate migration time.</p>';
+                totalTimeElement.textContent = 'Total Estimated Time: 0 hours 0 minutes';
+                return;
+            }
+            
+            let breakdownHTML = '';
+            let totalDiskSizeMB = 0;
+            
+            Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                const vm = getVMById(vmId);
+                if (vm && vm.disk) {
+                    const diskSizeMB = vm.disk * 1024;
+                    totalDiskSizeMB += diskSizeMB;
+                    const timeSeconds = diskSizeMB / transmissionRate;
+                    const timeMinutes = Math.ceil(timeSeconds / 60);
+                    
+                    breakdownHTML += `
+                        <div class="time-item">
+                            <span>${vm.hostname}</span>
+                            <span>${timeMinutes} min</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            const totalSeconds = totalDiskSizeMB / transmissionRate;
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.ceil((totalSeconds % 3600) / 60);
+            
+            breakdownElement.innerHTML = breakdownHTML;
+            totalTimeElement.textContent = `Total Estimated Time: ${hours} hours ${minutes} minutes`;
+        }
+
+        // Create hypervisor cards
+        function createHypervisorCards(data) {
+            const container = document.getElementById('hypervisor-container');
+            container.innerHTML = '';
+            
+            data.hypervisor.forEach((hypervisor, index) => {
+                const card = document.createElement('div');
+                card.className = 'hypervisor-card';
+                card.dataset.id = index;
+                
+                // Add drop event listeners
+                setupDropZone(card, index);
+                
+                // Calculate VM resource usage
+                let totalVMCpu = 0;
+                let totalVMMemory = 0;
+                let totalVMDisk = 0;
+                
+                hypervisor.VM.forEach(vm => {
+                    totalVMCpu += vm.cpu;
+                    totalVMMemory += vm.memory;
+                    totalVMDisk += vm.disk || 0; // Handle combined disk field
+                });
+                
+                // Calculate predicted resource usage after migrations
+                const predictedCpu = calculatePredictedCpu(index, totalVMCpu);
+                const predictedMemory = calculatePredictedMemory(index, totalVMMemory);
+                const predictedDisk = calculatePredictedDisk(index, totalVMDisk);
+                
+                const cpuUsagePercent = Math.round((totalVMCpu / hypervisor.cpu) * 100);
+                const memoryUsagePercent = Math.round((totalVMMemory / hypervisor.memory) * 100);
+                const diskUsagePercent = Math.round((totalVMDisk / hypervisor.disk) * 100);
+                
+                const predictedCpuPercent = Math.round((predictedCpu / hypervisor.cpu) * 100);
+                const predictedMemoryPercent = Math.round((predictedMemory / hypervisor.memory) * 100);
+                const predictedDiskPercent = Math.round((predictedDisk / hypervisor.disk) * 100);
+                
+                // Check for affinity conflicts
+                const hasAffinityConflict = checkHypervisorAffinityConflicts(index);
+                
+                // Get color for predicted fill based on whether this is a target
+                const isTarget = Object.values(vmMigrations).some(migration => migration.targetId === index);
+                const predictedColor = isTarget ? '#27ae60' : '#9b59b6';
+                
+                card.innerHTML = `
+                    <div class="hypervisor-header">
+                        <div style="display: flex; align-items: center;">
+                            <div class="hypervisor-name">${hypervisor.hostname}</div>
+                            ${hasAffinityConflict ? '<div class="affinity-warning">Affinity Conflict!</div>' : ''}
+                        </div>
+                        <div class="ht-indicator">${hypervisor.ht ? 'HT Enabled' : 'HT Disabled'}</div>
+                    </div>
+                    <div class="hypervisor-details">
+                        <div class="detail-item">
+                            <span class="detail-label">CPU Cores</span>
+                            <span class="detail-value">${hypervisor.cpu} 
+                                <span class="predicted-value">(${predictedCpu} predicted)</span>
+                            </span>
+                            <div class="resource-bar">
+                                <div class="resource-fill cpu-fill" style="width: ${cpuUsagePercent}%"></div>
+                                <div class="predicted-fill" style="width: ${predictedCpuPercent}%; background-color: ${predictedColor}"></div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Memory (GB)</span>
+                            <span class="detail-value">${hypervisor.memory} 
+                                <span class="predicted-value">(${predictedMemory} predicted)</span>
+                            </span>
+                            <div class="resource-bar">
+                                <div class="resource-fill memory-fill" style="width: ${memoryUsagePercent}%"></div>
+                                <div class="predicted-fill" style="width: ${predictedMemoryPercent}%; background-color: ${predictedColor}"></div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Disk (GB)</span>
+                            <span class="detail-value">${hypervisor.disk} 
+                                <span class="predicted-value">(${predictedDisk} predicted)</span>
+                            </span>
+                            <div class="resource-bar">
+                                <div class="resource-fill disk-fill" style="width: ${diskUsagePercent}%"></div>
+                                <div class="predicted-fill" style="width: ${predictedDiskPercent}%; background-color: ${predictedColor}"></div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Hugepage (GB)</span>
+                            <span class="detail-value">${hypervisor.hugepage}</span>
+                        </div>
+                    </div>
+                    <div class="vm-section">
+                        <h3 class="vm-title">
+                            <span>Virtual Machines (${hypervisor.VM.length})</span>
+                            ${Object.keys(getVMsFromHypervisor(index)).length > 0 ? 
+                                `<button class="clear-hypervisor-targets" data-hypervisor="${index}">Clear Targets</button>` : ''}
+                        </h3>
+                        <table class="vm-table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Hostname</th>
+                                    <th>Status</th>
+                                    <th>CPU</th>
+                                    <th>Memory</th>
+                                    <th>Disk</th>
+                                    <th>Target</th>
+                                    <th>Affinity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${hypervisor.VM.map((vm, vmIndex) => {
+                                    const migration = vmMigrations[vm.hostname];
+                                    const targetName = migration ? 
+                                        hypervisorData.hypervisor[migration.targetId].hostname : '';
+                                    
+                                    // Check if this VM migration would cause affinity conflict
+                                    const wouldCauseConflict = migration ? 
+                                        checkVMMigrationAffinityConflict(vm.hostname, migration.targetId) : false;
+                                    
+                                    const rowClass = wouldCauseConflict ? 'affinity-conflict' : '';
+                                    
+                                    return `
+                                    <tr class="vm-row ${rowClass}" data-vm-id="${vm.hostname}" data-hypervisor-id="${index}">
+                                        <td>
+                                            <div class="vm-drag-handle" draggable="true" data-vm-id="${vm.hostname}">
+                                                ⋮⋮
+                                            </div>
+                                        </td>
+                                        <td>${vm.hostname}</td>
+                                        <td><span class="status-${vm.status.replace(' ', '-')}">${vm.status}</span></td>
+                                        <td>${vm.cpu} cores</td>
+                                        <td>${vm.memory} GB</td>
+                                        <td>${vm.disk || 0} GB</td>
+                                        <td>${targetName}</td>
+                                        <td>${getVMAffinityGroups(vm.hostname).map(group => 
+                                            `<span class="affinity-group">${group}</span>`
+                                        ).join('')}</td>
+                                    </tr>
+                                `}).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                // Add event listeners for clear targets button
+                const clearButton = card.querySelector('.clear-hypervisor-targets');
+                if (clearButton) {
+                    clearButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        clearHypervisorTargets(index);
+                    });
+                }
+                
+                // Setup drag handlers for VM rows
+                card.querySelectorAll('.vm-drag-handle').forEach(handle => {
+                    setupDragHandle(handle, index);
+                });
+                
+                container.appendChild(card);
+            });
+            
+            // Draw migration paths after cards are created
+            drawMigrationPaths();
+            showMigrationInfo();
+            updateTimeBreakdown();
+        }
+
+        // Check if a VM migration would cause affinity conflict
+        function checkVMMigrationAffinityConflict(vmId, targetHypervisorId) {
+            const vmGroups = getVMAffinityGroups(vmId);
+            if (vmGroups.length === 0) return false;
+            
+            const targetHypervisor = hypervisorData.hypervisor[targetHypervisorId];
+            
+            // Check each VM in the target hypervisor for shared affinity groups
+            for (const targetVM of targetHypervisor.VM) {
+                const targetVMGroups = getVMAffinityGroups(targetVM.hostname);
+                
+                // Check if there's any shared affinity group
+                const sharedGroups = vmGroups.filter(group => targetVMGroups.includes(group));
+                if (sharedGroups.length > 0) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // Setup drag handle for VM
+        function setupDragHandle(handle, hypervisorId) {
+            const vmId = handle.dataset.vmId;
+            
+            handle.addEventListener('dragstart', (e) => {
+                dragState.isDragging = true;
+                dragState.draggedVM = vmId;
+                dragState.sourceHypervisor = hypervisorId;
+                
+                // Create drag preview
+                const vm = getVMById(vmId);
+                if (vm) {
+                    const preview = document.createElement('div');
+                    preview.className = 'drag-preview';
+                    preview.innerHTML = `
+                        <strong>${vm.hostname}</strong><br>
+                        CPU: ${vm.cpu} cores | Memory: ${vm.memory} GB | Disk: ${vm.disk || 0} GB
+                    `;
+                    document.body.appendChild(preview);
+                    
+                    e.dataTransfer.setDragImage(preview, 0, 0);
+                    e.dataTransfer.effectAllowed = 'move';
+                    
+                    // Add dragging class to VM row
+                    const vmRow = handle.closest('.vm-row');
+                    if (vmRow) {
+                        vmRow.classList.add('vm-dragging');
+                    }
+                }
+            });
+            
+            handle.addEventListener('dragend', (e) => {
+                dragState.isDragging = false;
+                dragState.draggedVM = null;
+                dragState.sourceHypervisor = null;
+                
+                // Remove drag preview
+                const preview = document.querySelector('.drag-preview');
+                if (preview) {
+                    preview.remove();
+                }
+                
+                // Remove drop-zone highlighting
+                document.querySelectorAll('.hypervisor-card').forEach(card => {
+                    card.classList.remove('drop-zone');
+                });
+                
+                // Remove dragging class from VM rows
+                document.querySelectorAll('.vm-dragging').forEach(row => {
+                    row.classList.remove('vm-dragging');
+                });
+            });
+        }
+
+        // Setup drop zone for hypervisor card
+        function setupDropZone(card, hypervisorId) {
+            card.addEventListener('dragover', (e) => {
+                if (dragState.isDragging && hypervisorId !== dragState.sourceHypervisor) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    card.classList.add('drop-zone');
+                }
+            });
+            
+            card.addEventListener('dragleave', (e) => {
+                card.classList.remove('drop-zone');
+            });
+            
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                card.classList.remove('drop-zone');
+                
+                if (dragState.isDragging && hypervisorId !== dragState.sourceHypervisor) {
+                    // Plan migration
+                    vmMigrations[dragState.draggedVM] = {
+                        sourceId: dragState.sourceHypervisor,
+                        targetId: hypervisorId
+                    };
+                    
+                    // Update UI
+                    calculateStats(hypervisorData);
+                    createHypervisorCards(hypervisorData);
+                }
+            });
+        }
+
+        // Get VM by ID
+        function getVMById(vmId) {
+            for (const hypervisor of hypervisorData.hypervisor) {
+                const vm = hypervisor.VM.find(v => v.hostname === vmId);
+                if (vm) return vm;
+            }
+            return null;
+        }
+
+        // Get VMs from a specific hypervisor
+        function getVMsFromHypervisor(hypervisorId) {
+            const vms = {};
+            Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                if (migration.sourceId === hypervisorId) {
+                    vms[vmId] = migration;
+                }
+            });
+            return vms;
+        }
+
+        // Calculate predicted CPU after migrations
+        function calculatePredictedCpu(hypervisorId, currentCpu) {
+            let predicted = currentCpu;
+            
+            // Subtract VMs scheduled for migration from this hypervisor
+            Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                if (migration.sourceId === hypervisorId) {
+                    const vm = getVMById(vmId);
+                    if (vm) {
+                        predicted -= vm.cpu;
+                    }
+                }
+            });
+            
+            // Add VMs scheduled to migrate to this hypervisor
+            Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                if (migration.targetId === hypervisorId) {
+                    const vm = getVMById(vmId);
+                    if (vm) {
+                        predicted += vm.cpu;
+                    }
+                }
+            });
+            
+            return Math.max(0, predicted);
+        }
+
+        // Calculate predicted memory after migrations
+        function calculatePredictedMemory(hypervisorId, currentMemory) {
+            let predicted = currentMemory;
+            
+            // Subtract VMs scheduled for migration from this hypervisor
+            Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                if (migration.sourceId === hypervisorId) {
+                    const vm = getVMById(vmId);
+                    if (vm) {
+                        predicted -= vm.memory;
+                    }
+                }
+            });
+            
+            // Add VMs scheduled to migrate to this hypervisor
+            Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                if (migration.targetId === hypervisorId) {
+                    const vm = getVMById(vmId);
+                    if (vm) {
+                        predicted += vm.memory;
+                    }
+                }
+            });
+            
+            return Math.max(0, predicted);
+        }
+
+        // Calculate predicted disk after migrations
+        function calculatePredictedDisk(hypervisorId, currentDisk) {
+            let predicted = currentDisk;
+            
+            // Subtract VMs scheduled for migration from this hypervisor
+            Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                if (migration.sourceId === hypervisorId) {
+                    const vm = getVMById(vmId);
+                    if (vm) {
+                        predicted -= (vm.disk || 0);
+                    }
+                }
+            });
+            
+            // Add VMs scheduled to migrate to this hypervisor
+            Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                if (migration.targetId === hypervisorId) {
+                    const vm = getVMById(vmId);
+                    if (vm) {
+                        predicted += (vm.disk || 0);
+                    }
+                }
+            });
+            
+            return Math.max(0, predicted);
+        }
+
+        // Clear targets for a specific hypervisor
+        function clearHypervisorTargets(hypervisorId) {
+            Object.keys(vmMigrations).forEach(vmId => {
+                if (vmMigrations[vmId].sourceId === hypervisorId) {
+                    delete vmMigrations[vmId];
+                }
+            });
+            
+            calculateStats(hypervisorData);
+            createHypervisorCards(hypervisorData);
+        }
+
+        // Draw migration paths as SVG arrows
+        function drawMigrationPaths() {
+            const overlay = document.getElementById('migration-overlay');
+            overlay.innerHTML = '';
+            
+            // Add arrowhead marker definitions for different colors
+            overlay.innerHTML = `
+                <defs>
+                    ${migrationColors.map((color, index) => `
+                        <marker id="arrowhead-${index}" markerWidth="10" markerHeight="7" 
+                        refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="${color}" />
+                        </marker>
+                    `).join('')}
+                </defs>
+            `;
+            
+            // Draw paths for each VM migration
+            Object.entries(vmMigrations).forEach(([vmId, migration], index) => {
+                const sourceCard = document.querySelector(`.hypervisor-card[data-id="${migration.sourceId}"]`);
+                const targetCard = document.querySelector(`.hypervisor-card[data-id="${migration.targetId}"]`);
+                
+                if (!sourceCard || !targetCard) return;
+                
+                const sourceRect = sourceCard.getBoundingClientRect();
+                const targetRect = targetCard.getBoundingClientRect();
+                const containerRect = document.querySelector('.dashboard').getBoundingClientRect();
+                
+                // Calculate center points
+                const sourceX = sourceRect.left + sourceRect.width / 2 - containerRect.left;
+                const sourceY = sourceRect.top + sourceRect.height / 2 - containerRect.top;
+                const targetX = targetRect.left + targetRect.width / 2 - containerRect.left;
+                const targetY = targetRect.top + targetRect.height / 2 - containerRect.top;
+                
+                // Create a curved path
+                const pathElem = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const curveFactor = 50 + (index * 15); // Offset each path slightly
+                
+                // Determine curve direction
+                const midX = (sourceX + targetX) / 2;
+                const midY = (sourceY + targetY) / 2;
+                
+                // Create a curved path
+                const d = `M ${sourceX} ${sourceY} 
+                          Q ${midX + curveFactor} ${midY + curveFactor} 
+                          ${targetX} ${targetY}`;
+                
+                const colorIndex = index % migrationColors.length;
+                pathElem.setAttribute('d', d);
+                pathElem.classList.add('migration-path', 'visible', 'animated');
+                pathElem.style.stroke = migrationColors[colorIndex];
+                pathElem.style.strokeDasharray = '5,5';
+                pathElem.setAttribute('marker-end', `url(#arrowhead-${colorIndex})`);
+                
+                overlay.appendChild(pathElem);
+            });
+        }
+
+        // Show migration information panel
+        function showMigrationInfo() {
+            const infoPanel = document.getElementById('migration-info');
+            const vmListElement = document.getElementById('migration-vm-list');
+            
+            vmListElement.innerHTML = '';
+            if (Object.keys(vmMigrations).length > 0) {
+                Object.entries(vmMigrations).forEach(([vmId, migration]) => {
+                    const vm = getVMById(vmId);
+                    const source = hypervisorData.hypervisor[migration.sourceId];
+                    const target = hypervisorData.hypervisor[migration.targetId];
+                    const wouldCauseConflict = checkVMMigrationAffinityConflict(vmId, migration.targetId);
+                    
+                    if (vm && source && target) {
+                        const vmItem = document.createElement('div');
+                        vmItem.className = 'migration-vm-item';
+                        if (wouldCauseConflict) {
+                            vmItem.style.background = '#ffeaea';
+                            vmItem.style.padding = '8px';
+                            vmItem.style.borderRadius = '4px';
+                            vmItem.style.borderLeft = '4px solid var(--danger-color)';
+                        }
+                        vmItem.innerHTML = `
+                            <div><strong>${vm.hostname}</strong> ${wouldCauseConflict ? '⚠️ Affinity Conflict!' : ''}</div>
+                            <div>${source.hostname} → ${target.hostname}</div>
+                            <div>CPU: ${vm.cpu} cores | Memory: ${vm.memory} GB | Disk: ${vm.disk || 0} GB</div>
+                            ${getVMAffinityGroups(vm.hostname).map(group => 
+                                `<span class="affinity-group">${group}</span>`
+                            ).join('')}
+                        `;
+                        vmListElement.appendChild(vmItem);
+                    }
+                });
+            } else {
+                vmListElement.innerHTML = '<div>Drag VMs to plan migrations</div>';
+            }
+            
+            infoPanel.classList.add('visible');
+        }
+
+        // Clear all migrations
+        function clearSelection() {
+            vmMigrations = {};
+            calculateStats(hypervisorData);
+            createHypervisorCards(hypervisorData);
+        }
+
+        // Update transmission rate
+        function updateTransmissionRate() {
+            const rateInput = document.getElementById('transmission-rate');
+            const newRate = parseInt(rateInput.value);
+            
+            if (isNaN(newRate) || newRate <= 0) {
+                alert('Please enter a valid transmission rate (positive number).');
+                return;
+            }
+            
+            transmissionRate = newRate;
+            localStorage.setItem('transmissionRate', transmissionRate);
+            
+            // Update UI
+            calculateStats(hypervisorData);
+            updateTimeBreakdown();
+        }
+
+        // Anti-affinity group functions
+        function getVMAffinityGroups(vmId) {
+            const groups = [];
+            antiAffinityGroups.forEach(group => {
+                if (group.vms.includes(vmId)) {
+                    groups.push(group.name);
+                }
+            });
+            return groups;
+        }
+
+        function calculateAffinityConflicts() {
+            affinityConflicts = {};
+            
+            hypervisorData.hypervisor.forEach((hypervisor, hypervisorId) => {
+                const vmGroups = {};
+                
+                // Group VMs by anti-affinity groups
+                hypervisor.VM.forEach(vm => {
+                    getVMAffinityGroups(vm.hostname).forEach(group => {
+                        if (!vmGroups[group]) {
+                            vmGroups[group] = [];
+                        }
+                        vmGroups[group].push(vm.hostname);
+                    });
+                });
+                
+                // Check for conflicts (more than one VM from the same group)
+                const conflicts = [];
+                Object.keys(vmGroups).forEach(group => {
+                    if (vmGroups[group].length > 1) {
+                        conflicts.push({
+                            group: group,
+                            vms: vmGroups[group]
+                        });
+                    }
+                });
+                
+                if (conflicts.length > 0) {
+                    affinityConflicts[hypervisorId] = conflicts;
+                }
+            });
+        }
+
+        function checkHypervisorAffinityConflicts(hypervisorId) {
+            return affinityConflicts[hypervisorId] && affinityConflicts[hypervisorId].length > 0;
+        }
+
+        function populateAffinityVMSelect() {
+            const select = document.getElementById('affinity-vm-select');
+            select.innerHTML = '';
+            
+            hypervisorData.hypervisor.forEach(hypervisor => {
+                hypervisor.VM.forEach(vm => {
+                    const option = document.createElement('option');
+                    option.value = vm.hostname;
+                    option.textContent = vm.hostname;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function createAffinityGroup() {
+            const nameInput = document.getElementById('affinity-group-name');
+            const vmSelect = document.getElementById('affinity-vm-select');
+            
+            const name = nameInput.value.trim();
+            const selectedVMs = Array.from(vmSelect.selectedOptions).map(option => option.value);
+            
+            if (!name) {
+                alert('Please enter a group name.');
+                return;
+            }
+            
+            if (selectedVMs.length < 2) {
+                alert('Please select at least two VMs for the anti-affinity group.');
+                return;
+            }
+            
+            // Check if group name already exists
+            if (antiAffinityGroups.some(group => group.name === name)) {
+                alert('An anti-affinity group with this name already exists.');
+                return;
+            }
+            
+            // Add the new group
+            antiAffinityGroups.push({
+                name: name,
+                vms: selectedVMs
+            });
+            
+            // Save to localStorage
+            localStorage.setItem('antiAffinityGroups', JSON.stringify(antiAffinityGroups));
+            
+            // Clear form
+            nameInput.value = '';
+            vmSelect.selectedIndex = -1;
+            
+            // Refresh UI
+            renderAffinityGroups();
+            calculateAffinityConflicts();
+            calculateStats(hypervisorData);
+            createHypervisorCards(hypervisorData);
+        }
+
+        function deleteAffinityGroup(groupName) {
+            antiAffinityGroups = antiAffinityGroups.filter(group => group.name !== groupName);
+            localStorage.setItem('antiAffinityGroups', JSON.stringify(antiAffinityGroups));
+            renderAffinityGroups();
+            calculateAffinityConflicts();
+            calculateStats(hypervisorData);
+            createHypervisorCards(hypervisorData);
+        }
+
+        function renderAffinityGroups() {
+            const container = document.getElementById('affinity-groups-container');
+            container.innerHTML = '';
+            
+            if (antiAffinityGroups.length === 0) {
+                container.innerHTML = '<p>No anti-affinity groups defined.</p>';
+                return;
+            }
+            
+            antiAffinityGroups.forEach(group => {
+                const groupCard = document.createElement('div');
+                groupCard.className = 'affinity-group-card';
+                groupCard.innerHTML = `
+                    <div class="affinity-group-header">
+                        <div class="affinity-group-name">${group.name}</div>
+                        <button class="delete-affinity" data-group="${group.name}">Delete</button>
+                    </div>
+                    <div class="affinity-group-vms">
+                        ${group.vms.map(vm => `<span class="affinity-vm-tag">${vm}</span>`).join('')}
+                    </div>
+                `;
+                
+                const deleteButton = groupCard.querySelector('.delete-affinity');
+                deleteButton.addEventListener('click', () => deleteAffinityGroup(group.name));
+                
+                container.appendChild(groupCard);
+            });
+        }
+
+        // Tab switching
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and contents
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+                    
+                    // If switching to affinity tab, populate VM select
+                    if (tab.dataset.tab === 'affinity') {
+                        populateAffinityVMSelect();
+                    }
+                    
+                    // If switching to settings tab, update time breakdown
+                    if (tab.dataset.tab === 'settings') {
+                        updateTimeBreakdown();
+                    }
+                });
+            });
+        }
+
+        // Initialize the dashboard
+        async function initDashboard() {
+            hypervisorData = await loadData();
+            
+            if (hypervisorData) {
+                // Initialize transmission rate input
+                document.getElementById('transmission-rate').value = transmissionRate;
+                
+                calculateStats(hypervisorData);
+                createHypervisorCards(hypervisorData);
+                renderAffinityGroups();
+                updateTimeBreakdown();
+                setupTabs();
+                
+                // Set up event listeners for controls
+                document.getElementById('clear-selection').addEventListener('click', clearSelection);
+                document.getElementById('create-affinity-group').addEventListener('click', createAffinityGroup);
+                document.getElementById('update-settings').addEventListener('click', updateTransmissionRate);
+            } else {
+                document.getElementById('hypervisor-container').innerHTML = 
+                    '<div class="no-data">No data loaded. Please check the instructions above.</div>';
+            }
+        }
+
+        // Start the dashboard when the page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
