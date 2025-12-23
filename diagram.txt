@@ -1,0 +1,23 @@
+                     +-----------------------------------+
+                     |           Katello (UI & Logic)    |
+                     |  (Lifecycle Envs, Content Views)  |
+                     +------------------+----------------+
+                                        | Orchestrates & Glues
+                                        |
+        +-------------------------------v--------------------------------+
+        |                               |                                |
++-------v--------+             +--------v---------+            +---------v-----------+
+|   Pulp/core    |             |     Candlepin    |            |   Foreman (Infra)   |
+| (Content Engine)|             |(Subscription Mgr)|            | (Provisioning, Hosts)|
+| - Repos        |<---Sync---->| - Subscriptions  |<--Attach-->| - Hosts/Facts       |
+| - RPMs/Containers|             | - Entitlements   |            | - Reports           |
+| - Distribution |             | - Compliance     |            +---------------------+
++----------------+             +------------------+
+         ^
+         | Serves Content
+         |
++--------v---------+
+|   Client Hosts   |
+| (subscription-manager)|
+|   (yum/dnf)      |
++------------------+
